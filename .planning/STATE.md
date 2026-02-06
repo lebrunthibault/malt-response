@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Generer en un clic une reponse de candidature Malt pertinente et personnalisee, alimentee par le contexte complet du candidat.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 2 - Authentication
 
 ## Current Position
 
-Phase: 1 of 8 (Foundation) -- COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase complete, pending verification
-Last activity: 2026-02-06 -- Completed 01-03-PLAN.md (all 3 plans done)
+Phase: 2 of 8 (Authentication)
+Plan: 1 of 2 in current phase
+Status: 02-01 checkpoint paused (Supabase email template needs OTP config)
+Last activity: 2026-02-06 -- Tasks 1-2 of 02-01 committed, checkpoint awaiting user verification
 
 Progress: [██░░░░░░░░] 20% (3/15 plans)
 
@@ -69,5 +69,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Phase 1 complete, ready for Phase 2
-Resume file: None
+Stopped at: Phase 2, Plan 02-01 checkpoint (task 3/3) — awaiting Supabase email template config
+Resume file: .planning/phases/02-authentication/.continue-here.md
