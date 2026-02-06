@@ -33,12 +33,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. tRPC API responds to a health-check call from both server and client components
   4. Supabase clients (browser, server, admin) are configured and can connect to the database
   5. The application shell renders with navigation layout and placeholder pages
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Next.js 16 project setup with Tailwind v4, shadcn/ui, and Vercel deployment
-- [ ] 01-02: Supabase database schema, RLS policies, and storage bucket configuration
-- [ ] 01-03: tRPC v11 setup with context creation, routers, and HTTP handler
+- [ ] 01-01-PLAN.md — Next.js 16 project setup with Tailwind v4, shadcn/ui, Supabase clients, and proxy.ts
+- [ ] 01-02-PLAN.md — tRPC v11 setup with health check and complete database schema migration
+- [ ] 01-03-PLAN.md — Application shell with sidebar navigation and all placeholder pages
 
 ### Phase 2: Authentication
 **Goal**: Users can securely create accounts and access their personal space via email OTP, with sessions that persist across visits
@@ -153,7 +153,7 @@ Note: Phases 5, 6, and 7 all depend on Phase 4 and could execute in parallel, bu
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 0/3 | Planning complete | - |
 | 2. Authentication | 0/2 | Not started | - |
 | 3. Document Management | 0/2 | Not started | - |
 | 4. Generation Core | 0/2 | Not started | - |
