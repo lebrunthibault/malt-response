@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 1 of 8 (Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-06 -- Completed 01-01-PLAN.md
+Last activity: 2026-02-06 -- Completed 01-02-PLAN.md
 
-Progress: [█░░░░░░░░░] 6.7% (1/15 plans)
+Progress: [██░░░░░░░░] 13.3% (2/15 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 4m
-- Total execution time: 0.07 hours
+- Total plans completed: 2
+- Average duration: 3.5m
+- Total execution time: 0.12 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1/3 | 4m | 4m |
+| 01-foundation | 2/3 | 7m | 3.5m |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4m)
-- Trend: Just started
+- Last 5 plans: 01-01 (4m), 01-02 (3m)
+- Trend: Accelerating
 
 *Updated after each plan completion*
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - [01-01]: Use Tailwind v4 CSS-first config (@theme inline) instead of tailwind.config.ts
 - [01-01]: Implement proxy.ts with getClaims() for token refresh (not middleware.ts with getUser())
 - [01-01]: Three-tier Supabase client architecture (browser/server/admin)
+- [01-02]: tRPC v11 uses createTRPCReact (not createTRPCProxyClient)
+- [01-02]: Server-side caller uses createCallerFactory with cached context
+- [01-02]: Single migration file for complete schema (atomic application)
 
 ### Pending Todos
 
@@ -58,10 +61,10 @@ None yet.
 
 - [Research]: Phase 4 (Generation Core) needs research during planning -- prompt engineering, context assembly, streaming on Vercel
 - [Research]: Scanned PDF detection heuristics need validation during Phase 3
-- [01-01]: Supabase project must be created and credentials configured before Phase 01-03 (database schema) can proceed
+- [01-02]: Database migration SQL ready but must be applied manually via Supabase Dashboard or CLI before features work
 
 ## Session Continuity
 
-Last session: 2026-02-06T01:17:07Z
-Stopped at: Completed 01-01-PLAN.md (Next.js 16 + Tailwind v4 + Supabase clients)
+Last session: 2026-02-06T01:25:37Z
+Stopped at: Completed 01-02-PLAN.md (tRPC v11 + Database schema)
 Resume file: None
