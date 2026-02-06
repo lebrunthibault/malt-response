@@ -50,11 +50,11 @@ Plans:
   3. User can log out from any page in the application
   4. User can view and edit their profile (name, email) from a profile page
   5. Unauthenticated users are redirected to the login page when accessing protected routes
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Supabase OTP auth flow, session management, and route protection
-- [ ] 02-02: Profile page with view and edit functionality
+- [ ] 02-01-PLAN.md — OTP login flow, user menu dropdown with logout, route protection with return URL, skeleton loading
+- [ ] 02-02-PLAN.md — Profile page with tRPC router and inline name editing
 
 ### Phase 3: Document Management
 **Goal**: Users can upload, view, and manage their candidate context (CV, profile description, past Malt responses) that will feed AI generation
