@@ -12,7 +12,7 @@ MaltResponse is built in 8 phases following strict dependency order: foundation 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Project scaffolding, database schema, Supabase config, tRPC skeleton
+- [x] **Phase 1: Foundation** - Project scaffolding, database schema, Supabase config, tRPC skeleton
 - [ ] **Phase 2: Authentication** - OTP login, session persistence, logout, user profile
 - [ ] **Phase 3: Document Management** - CV upload with PDF extraction, text input, past responses, list and delete
 - [ ] **Phase 4: Generation Core** - AI generation pipeline with Claude, context assembly, copy-to-clipboard
@@ -36,9 +36,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Next.js 16 project setup with Tailwind v4, shadcn/ui, Supabase clients, and proxy.ts
-- [ ] 01-02-PLAN.md — tRPC v11 setup with health check and complete database schema migration
-- [ ] 01-03-PLAN.md — Application shell with sidebar navigation and all placeholder pages
+- [x] 01-01-PLAN.md — Next.js 16 project setup with Tailwind v4, shadcn/ui, Supabase clients, and proxy.ts
+- [x] 01-02-PLAN.md — tRPC v11 setup with health check and complete database schema migration
+- [x] 01-03-PLAN.md — Application shell with sidebar navigation and all placeholder pages
 
 ### Phase 2: Authentication
 **Goal**: Users can securely create accounts and access their personal space via email OTP, with sessions that persist across visits
@@ -153,7 +153,7 @@ Note: Phases 5, 6, and 7 all depend on Phase 4 and could execute in parallel, bu
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Foundation | 0/3 | Planning complete | - |
+| 1. Foundation | 3/3 | Complete | 2026-02-06 |
 | 2. Authentication | 0/2 | Not started | - |
 | 3. Document Management | 0/2 | Not started | - |
 | 4. Generation Core | 0/2 | Not started | - |

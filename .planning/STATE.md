@@ -9,29 +9,29 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 1 of 8 (Foundation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-06 -- Completed 01-02-PLAN.md
+Phase: 1 of 8 (Foundation) -- COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase complete, pending verification
+Last activity: 2026-02-06 -- Completed 01-03-PLAN.md (all 3 plans done)
 
-Progress: [██░░░░░░░░] 13.3% (2/15 plans)
+Progress: [██░░░░░░░░] 20% (3/15 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 3.5m
-- Total execution time: 0.12 hours
+- Total plans completed: 3
+- Average duration: 4m
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2/3 | 7m | 3.5m |
+| 01-foundation | 3/3 | 12m | 4m |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4m), 01-02 (3m)
-- Trend: Accelerating
+- Last 5 plans: 01-01 (4m), 01-02 (3m), 01-03 (5m)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - [01-02]: tRPC v11 uses createTRPCReact (not createTRPCProxyClient)
 - [01-02]: Server-side caller uses createCallerFactory with cached context
 - [01-02]: Single migration file for complete schema (atomic application)
+- [01-03]: Sidebar navigation over top nav (French labels scale better)
+- [01-03]: Route groups: (app) authenticated, (auth) public, (admin) admin
+- [01-03]: Root / redirects to /generate as primary action
 
 ### Pending Todos
 
@@ -65,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-06T01:25:37Z
-Stopped at: Completed 01-02-PLAN.md (tRPC v11 + Database schema)
+Last session: 2026-02-06
+Stopped at: Phase 1 complete, ready for Phase 2
 Resume file: None
