@@ -8,7 +8,7 @@
 
 Phase 1 is pure infrastructure: project scaffolding, database schema, Supabase configuration, tRPC API skeleton, and application shell with navigation and placeholder pages. No feature logic -- just the foundation that all subsequent phases build on.
 
-The standard approach for this stack is well-documented across official sources. Next.js 16 introduces breaking changes from Next.js 15 (`proxy.ts` replaces `middleware.ts`, all request APIs are async, auth must NOT be in proxy). tRPC v11 has a new setup pattern for App Router with `createTRPCOptionsProxy` and `createTRPCContext` from `@trpc/tanstack-react-query`. Supabase SSR uses `@supabase/ssr` with `getAll()`/`setAll()` cookie methods and now recommends `getClaims()` over `getUser()` for proxy-level token refresh (faster, local JWT verification). shadcn/ui with Tailwind v4 uses CSS-first configuration with `@theme inline` and OKLCH colors.
+The standard approach for this stack is well-documented across official sources. Next.js 16 introduces breaking changes from Next.js 15 (`proxy.ts` replaces `middleware.ts`, all request APIs are async, the function export must be named `proxy`). tRPC v11 has a specific setup pattern for App Router with `createTRPCOptionsProxy` and `createTRPCContext` from `@trpc/tanstack-react-query`. Supabase SSR uses `@supabase/ssr` with `getAll()`/`setAll()` cookie methods and now recommends `getClaims()` over `getUser()` for proxy-level token refresh (faster, local JWT verification). shadcn/ui with Tailwind v4 uses CSS-first configuration with `@theme inline` and OKLCH colors.
 
 **Primary recommendation:** Follow the verified code patterns documented below exactly. The biggest risk in Phase 1 is using outdated patterns from Next.js 15 or tRPC v10 tutorials. Every code example below has been verified against official 2026 documentation.
 
@@ -41,9 +41,9 @@ The established libraries/tools for this phase:
 |---------|---------|---------|--------------|
 | Next.js | 16.1.x (latest) | Full-stack React framework | App Router, Turbopack default, proxy.ts, React 19.2 |
 | React | 19.2 (bundled) | UI rendering | Required by Next.js 16; function components, no forwardRef |
-| TypeScript | 5.7.2+ | Type safety | tRPC v11 peer dependency; strict mode required |
+| TypeScript | 5.1.0+ (latest 5.x) | Type safety | tRPC v11 peer dependency; strict mode required |
 | @trpc/server | ^11.8.x | Type-safe API server | End-to-end types, shorthand router syntax |
-| @trpc/client | ^11.9.x | Type-safe API client | httpBatchLink for streaming support |
+| @trpc/client | ^11.9.x | Type-safe API client | httpBatchLink for batched requests |
 | @trpc/tanstack-react-query | ^11.x | React Query integration | Server-side prefetching with RSC, auto-hydration |
 | @tanstack/react-query | ^5.90.x | Server state management | Required by tRPC v11 |
 | @supabase/supabase-js | ^2.95.x | Supabase client SDK | PostgreSQL + Auth + Storage |
@@ -55,7 +55,7 @@ The established libraries/tools for this phase:
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| superjson | ^2.x | Data transformer | tRPC serialization (Date, BigInt, etc.) |
+| superjson | ^2.x | Data transformer | tRPC serialization (Date, BigInt, etc.) -- required on BOTH server init AND client link |
 | zod | ^3.x | Input validation | tRPC input schemas |
 | server-only | latest | Import guard | Prevents server code in client bundles |
 | client-only | latest | Import guard | Prevents client code in server bundles |
@@ -133,7 +133,7 @@ src/
 │   │   ├── sidebar.tsx               # App sidebar navigation
 │   │   └── header.tsx                # Page header
 │   └── theme-provider.tsx            # Optional dark mode
-├── proxy.ts                          # Token refresh + redirects (NOT auth)
+├── proxy.ts                          # Token refresh + redirects (NOT auth gate)
 └── .env.local                        # Environment variables
 ```
 
@@ -182,7 +182,6 @@ export const authedProcedure = t.procedure.use(async ({ ctx, next }) => {
 // Source: https://trpc.io/docs/client/tanstack-react-query/server-components
 import 'server-only';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { cache } from 'react';
 import { createTRPCContext } from './init';
 import { makeQueryClient } from './query-client';
@@ -197,22 +196,6 @@ export const trpc = createTRPCOptionsProxy({
 });
 
 export const caller = appRouter.createCaller(createTRPCContext);
-
-export function HydrateClient(props: { children: React.ReactNode }) {
-  const queryClient = getQueryClient();
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      {props.children}
-    </HydrationBoundary>
-  );
-}
-
-export function prefetch<T extends ReturnType<(typeof trpc)[string][string]>>(
-  queryOptions: T,
-) {
-  const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(queryOptions as any);
-}
 ```
 
 **trpc/client.tsx:**
@@ -273,6 +256,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
 
 **trpc/query-client.ts:**
 ```typescript
+// Source: https://trpc.io/docs/client/tanstack-react-query/server-components
 import { defaultShouldDehydrateQuery, QueryClient } from '@tanstack/react-query';
 
 export function makeQueryClient() {
@@ -298,7 +282,7 @@ export function makeQueryClient() {
 
 **lib/supabase/client.ts (browser):**
 ```typescript
-// Source: https://supabase.com/docs/guides/auth/server-side/nextjs
+// Source: https://supabase.com/docs/guides/auth/server-side/creating-a-client
 import { createBrowserClient } from '@supabase/ssr';
 
 export function createClient() {
@@ -311,7 +295,7 @@ export function createClient() {
 
 **lib/supabase/server.ts (server):**
 ```typescript
-// Source: https://supabase.com/docs/guides/getting-started/ai-prompts/nextjs-supabase-auth
+// Source: https://supabase.com/docs/guides/auth/server-side/nextjs
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
@@ -354,15 +338,18 @@ export const supabaseAdmin = createClient(
 );
 ```
 
-### Pattern 3: proxy.ts for Token Refresh (NOT Auth)
+### Pattern 3: proxy.ts for Token Refresh (NOT Auth Gate)
 
-**What:** Refresh Supabase auth tokens on every request via cookies. Redirect unauthenticated users.
-**When to use:** Always for Supabase Auth with Next.js.
+**What:** Refresh Supabase auth tokens on every request via cookies. Redirect unauthenticated users optimistically.
+**When to use:** Always for Supabase Auth with Next.js 16.
 
 **CRITICAL:** `proxy.ts` should NOT be relied upon as the sole auth layer (CVE-2025-29927). It handles token refresh and optimistic redirects. Real auth validation happens in Server Components and tRPC procedures.
 
+**IMPORTANT:** In Next.js 16, the file MUST be named `proxy.ts` and the function MUST be exported as `proxy` (not `middleware`). The old `middleware.ts` is deprecated.
+
 ```typescript
-// Source: https://supabase.com/docs/guides/getting-started/ai-prompts/nextjs-supabase-auth
+// Source: https://supabase.com/docs/guides/auth/server-side/nextjs
+// proxy.ts (at project root or src/)
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -390,9 +377,9 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: getClaims() validates JWT locally (fast, no network request)
-  // and refreshes expired tokens. Use getUser() in server actions for
-  // real-time session validation.
+  // getClaims() validates JWT locally (fast, no network request)
+  // and refreshes expired tokens automatically.
+  // Use getUser() in tRPC context for authoritative session validation.
   const { data: { claims } } = await supabase.auth.getClaims();
   const user = claims?.sub ? { id: claims.sub } : null;
 
@@ -417,6 +404,11 @@ export const config = {
   ],
 };
 ```
+
+**NOTE on getClaims() vs getUser():**
+- `getClaims()` validates JWT locally against Supabase's JWKS (fast, cached, no network call for asymmetric key projects). Supabase officially recommends it for proxy/middleware. It also handles token refresh automatically.
+- `getUser()` always makes a network call to Supabase Auth server (authoritative but slower). Use in tRPC context and Server Components where you need definitive session state.
+- `getSession()` should NEVER be trusted server-side -- it does not validate the JWT.
 
 ### Pattern 4: tRPC HTTP Handler (Route Handler)
 
@@ -443,8 +435,6 @@ export { handler as GET, handler as POST };
 **What:** All 5 tables with RLS enabled and policies.
 **When to use:** Phase 1 database setup. This schema is from the architecture research and supports all subsequent phases.
 
-Full SQL schema is in `.planning/research/ARCHITECTURE.md`. Key tables: `profiles`, `documents`, `job_offers`, `responses`, `generation_logs`.
-
 Key RLS pattern for every table:
 ```sql
 ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
@@ -457,15 +447,16 @@ CREATE POLICY "Users can view own data"
 ### Anti-Patterns to Avoid
 
 - **Auth in proxy.ts as sole security layer:** CVE-2025-29927 showed proxy/middleware auth can be bypassed. proxy.ts is for optimistic redirects and token refresh ONLY. Real auth validation in Server Components (`getUser()`) and tRPC `authedProcedure`.
-- **Using `middleware.ts` instead of `proxy.ts`:** Deprecated in Next.js 16. The file is renamed, function is renamed. Use the codemod if migrating.
-- **Sync access to cookies(), headers(), params, searchParams:** All async in Next.js 16. Forgetting `await` produces silent `[object Promise]` values. Always `const cookieStore = await cookies()`.
-- **tRPC v10 patterns:** Do NOT use `@trpc/next` (Pages Router only), `@trpc/react-query` (renamed to `@trpc/tanstack-react-query`), or `createTRPCProxyClient` (use `createTRPCClient`). Do NOT put `transformer` at root config level (put on each link).
+- **Using `middleware.ts` instead of `proxy.ts`:** Deprecated in Next.js 16. The file is renamed, function export must be `proxy`. Use the codemod if migrating: `npx @next/codemod@canary middleware-to-proxy .`
+- **Sync access to cookies(), headers(), params, searchParams:** All async in Next.js 16. Forgetting `await` produces silent `[object Promise]` values, not errors. Always `const cookieStore = await cookies()`.
+- **tRPC v10 patterns:** Do NOT use `@trpc/next` (Pages Router only), `@trpc/react-query` (renamed to `@trpc/tanstack-react-query`), or `createTRPCProxyClient` (use `createTRPCClient`). The `transformer` property must be on BOTH `initTRPC.create()` AND on each link (`httpBatchLink`).
 - **`@supabase/auth-helpers-nextjs`:** DEPRECATED. Use `@supabase/ssr` exclusively.
 - **Individual cookie methods (get/set/remove):** Use ONLY `getAll()` and `setAll()` with `@supabase/ssr`. Individual methods break the session management.
 - **`tailwindcss-animate`:** DEPRECATED. Use `tw-animate-css`.
 - **`tailwind.config.js`:** Not used with Tailwind v4. All config in CSS via `@theme inline`.
 - **`React.forwardRef`:** Not needed in React 19. shadcn/ui components use plain function components with `data-slot`.
-- **`getSession()` in server code:** Never trust it server-side. Use `getClaims()` (fast, local JWT validation) or `getUser()` (network call to Supabase Auth server) depending on need.
+- **`getSession()` in server code:** Never trust it server-side. Use `getClaims()` (fast, local JWT validation) in proxy or `getUser()` (network call to Supabase Auth server) in tRPC context.
+- **`NEXT_PUBLIC_SUPABASE_ANON_KEY`:** Supabase is transitioning to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Use the new name for new projects (both work, but new name is forward-compatible).
 
 ## Don't Hand-Roll
 
@@ -502,7 +493,7 @@ Problems that look simple but have existing solutions:
 
 **What goes wrong:** Using v10 package names or API patterns causes silent failures or build errors.
 **Why it happens:** tRPC v11 renamed several packages and moved configuration options.
-**How to avoid:** Use `@trpc/tanstack-react-query` (not `@trpc/react-query`). Use `createTRPCClient` (not `createTRPCProxyClient`). Use `createTRPCContext` from `@trpc/tanstack-react-query` (not from `@trpc/react-query`). Use `useTRPC()` hook (not `trpc.` proxy).
+**How to avoid:** Use `@trpc/tanstack-react-query` (not `@trpc/react-query`). Use `createTRPCClient` (not `createTRPCProxyClient`). Use `createTRPCContext` from `@trpc/tanstack-react-query` (not from `@trpc/react-query`). Use `useTRPC()` hook (not `trpc.` proxy on client side).
 **Warning signs:** Build errors mentioning deprecated exports. TypeScript errors on tRPC client creation.
 
 ### Pitfall 4: Supabase Cookie Method Mismatch
@@ -515,8 +506,8 @@ Problems that look simple but have existing solutions:
 ### Pitfall 5: Supabase Environment Variable Naming
 
 **What goes wrong:** Using `NEXT_PUBLIC_SUPABASE_ANON_KEY` when Supabase is transitioning to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-**Why it happens:** Supabase is rebranding key names. Both work currently.
-**How to avoid:** Use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for new projects (forward-compatible). Never expose `SUPABASE_SERVICE_ROLE_KEY` with `NEXT_PUBLIC_` prefix.
+**Why it happens:** Supabase is rebranding key names. Both work currently but new projects should use the new name.
+**How to avoid:** Use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for new projects. Never expose `SUPABASE_SERVICE_ROLE_KEY` with `NEXT_PUBLIC_` prefix.
 **Warning signs:** Deprecation warnings in Supabase dashboard.
 
 ### Pitfall 6: tRPC Content-Type 415 Errors
@@ -525,6 +516,20 @@ Problems that look simple but have existing solutions:
 **Why it happens:** New in tRPC v11 for security.
 **How to avoid:** Ensure `Content-Type: application/json` passes through on all tRPC POST requests. Test mutations early in production-like environment.
 **Warning signs:** All POST-based tRPC calls returning 415 errors.
+
+### Pitfall 7: superjson Transformer Must Be in Both Places
+
+**What goes wrong:** Adding `transformer: superjson` only to `initTRPC.create()` or only to the link, but not both.
+**Why it happens:** tRPC v11 moved transformer config from root-only (v10) to requiring it on both server init AND each client link.
+**How to avoid:** Add `transformer: superjson` to `initTRPC.create({})` AND to `httpBatchLink({})`. TypeScript will flag the mismatch.
+**Warning signs:** Dates arriving as strings instead of Date objects. Serialization errors on complex types.
+
+### Pitfall 8: proxy.ts Function Name Must Be "proxy"
+
+**What goes wrong:** Exporting the function as `middleware` in `proxy.ts` or naming the file `middleware.ts`.
+**Why it happens:** Copying old Next.js 15 patterns or Supabase templates that haven't been updated for Next.js 16.
+**How to avoid:** File must be `proxy.ts`, function must be `export async function proxy(request)` or `export default function proxy(request)`.
+**Warning signs:** Proxy not executing, Vercel console warnings about missing middleware.
 
 ## Code Examples
 
@@ -804,6 +809,8 @@ CREATE POLICY "Users can delete own files"
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
 /* Organic, simple color palette */
 :root {
   --background: oklch(0.985 0.002 90);
@@ -901,7 +908,7 @@ CREATE POLICY "Users can delete own files"
 }
 ```
 
-Note: The color palette above uses warm, earthy tones (hue 90 for warm gray, hue 160 for muted green primary) to match the "organic, simple" design language. shadcn/ui init will generate its own theme -- customize the values after init to match the organic palette.
+Note: The color palette uses warm, earthy tones (hue 90 for warm gray, hue 160 for muted green primary) to match the "organic, simple" design language. shadcn/ui init will generate its own theme -- customize the values after init to match the organic palette.
 
 ### Environment Variables
 
@@ -920,26 +927,30 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| `middleware.ts` | `proxy.ts` | Next.js 16 (Dec 2025) | File rename + function rename. Codemod available. |
-| `getSession()` in server code | `getClaims()` (fast) or `getUser()` (authoritative) | Supabase 2025-2026 | getClaims validates JWT locally (no network call). Use in proxy. Use getUser() for authoritative checks. |
+| `middleware.ts` with `export function middleware()` | `proxy.ts` with `export function proxy()` | Next.js 16 (Dec 2025) | File rename + function rename. Codemod available. Runs on Node.js runtime (not Edge). |
+| `getSession()` in server code | `getClaims()` (fast) or `getUser()` (authoritative) | Supabase 2025-2026 | getClaims validates JWT locally via JWKS (no network call). Use in proxy. Use getUser() for authoritative checks. |
 | `@trpc/react-query` | `@trpc/tanstack-react-query` | tRPC v11 | Package rename. Old package does not exist. |
 | `createTRPCProxyClient` | `createTRPCClient` | tRPC v11 | API rename. |
 | `trpc.query.useQuery()` | `useTRPC()` + `useQuery(trpc.query.queryOptions())` | tRPC v11 | Query-native pattern with TanStack Query v5. |
+| `transformer` on root config only | `transformer` on BOTH `initTRPC.create()` AND each link | tRPC v11 | Must be in both places. TypeScript guides you. |
 | `@supabase/auth-helpers-nextjs` | `@supabase/ssr` | Supabase 2024 | Complete rewrite. getAll/setAll cookie pattern. |
 | `tailwindcss-animate` | `tw-animate-css` | March 2025 | shadcn/ui deprecated old package. |
 | `tailwind.config.js` | CSS `@theme inline` | Tailwind v4 | Config moved entirely to CSS. |
 | `React.forwardRef` | Plain function components | React 19 | No longer needed. Components use `data-slot`. |
 | `hsl(var(--color))` in CSS | `oklch()` values directly in CSS vars | shadcn/ui + Tailwind v4 | Colors include color function in the variable. |
 | `isLoading` (React Query) | `isPending` | TanStack Query v5 | Property rename. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase 2025-2026 | Both work, new name is forward-compatible. |
 
 **Deprecated/outdated:**
 - `@supabase/auth-helpers-nextjs`: Removed, use `@supabase/ssr`
-- `middleware.ts`: Renamed to `proxy.ts` in Next.js 16
+- `middleware.ts`: Deprecated in Next.js 16, use `proxy.ts`
 - `tailwindcss-animate`: Replaced by `tw-animate-css`
 - `@trpc/react-query`: Renamed to `@trpc/tanstack-react-query`
 - `@trpc/next`: Pages Router only, do not use with App Router
 - Individual cookie methods in Supabase SSR: Use `getAll()`/`setAll()` only
 - Sync `cookies()` / `headers()`: Must be awaited in Next.js 16
+- `next lint`: Removed in Next.js 16, use ESLint directly
+- `serverRuntimeConfig` / `publicRuntimeConfig`: Removed, use env vars
 
 ## Design Recommendations (Claude's Discretion)
 
@@ -971,39 +982,42 @@ Using Next.js route groups:
 
 Things that could not be fully resolved:
 
-1. **Supabase `getClaims()` vs `getUser()` in proxy.ts**
-   - What we know: `getClaims()` is faster (local JWT validation), `getUser()` is authoritative (network call). Official docs now recommend `getClaims()` for proxy/middleware.
-   - What is unclear: Whether `getClaims()` returns user claims in the exact same shape as `getUser()`. The `sub` field contains the user ID.
-   - Recommendation: Use `getClaims()` in proxy.ts for speed. Use `getUser()` in tRPC context for authoritative validation.
+1. **Supabase `getClaims()` return shape**
+   - What we know: `getClaims()` is faster than `getUser()` (local JWT validation via JWKS). Supabase officially recommends it for proxy/middleware. The `sub` claim contains the user ID. It handles token refresh automatically.
+   - What is unclear: The exact shape of the returned claims object may differ from `getUser()` result. Specifically, `claims?.sub` gives the user UUID.
+   - Recommendation: Use `getClaims()` in proxy.ts for speed and token refresh. Use `getUser()` in tRPC context for authoritative validation and to get the full user object.
 
 2. **shadcn/ui + Tailwind v4 exact CSS after init**
-   - What we know: `npx shadcn@latest init` auto-detects Tailwind v4 and generates correct CSS.
+   - What we know: `npx shadcn@latest init` auto-detects Tailwind v4 and generates correct CSS with `@custom-variant dark (&:is(.dark *))`.
    - What is unclear: The exact generated CSS may differ from what is documented. The organic color palette will need to be applied AFTER init.
    - Recommendation: Run `shadcn init` first, then customize the generated CSS variables to match the organic palette.
 
-3. **tRPC superjson transformer placement in v11**
-   - What we know: Prior research says transformer moved from root to link config. But the official docs show `httpBatchLink` without `transformer` in the setup guide.
-   - What is unclear: Whether superjson is still needed or if tRPC v11 handles serialization differently by default.
-   - Recommendation: Include superjson in the `httpBatchLink` config. If Date serialization works without it, it can be removed.
+3. **Next.js 16 parallel routes require default.js**
+   - What we know: If using parallel routes (modal patterns, etc.), all slots now require explicit `default.tsx` files. Builds fail without them.
+   - What is unclear: Whether the route group pattern `(auth)`, `(app)`, `(admin)` counts as parallel routes.
+   - Recommendation: Route groups are NOT parallel routes -- they are for layout organization only. No `default.tsx` needed for route groups. Only needed for `@slot` patterns.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [Next.js 16 proxy.ts API reference](https://nextjs.org/docs/app/api-reference/file-conventions/proxy) -- Complete proxy API, matcher config, limitations
-- [Next.js 16 Blog Post](https://nextjs.org/blog/next-16) -- Breaking changes, proxy rename, async APIs
+- [Next.js 16 Blog Post](https://nextjs.org/blog/next-16) -- Breaking changes, proxy rename, async APIs, React 19.2, Turbopack default
+- [Next.js 16 proxy.ts API Reference](https://nextjs.org/docs/app/api-reference/file-conventions/proxy) -- Complete proxy API, matcher config, function signature, limitations
+- [Next.js 16 Upgrade Guide](https://nextjs.org/docs/app/guides/upgrading/version-16) -- All breaking changes, deprecations, removals
 - [tRPC v11 Server Components Setup](https://trpc.io/docs/client/tanstack-react-query/server-components) -- File structure, init.ts, server.tsx, client.tsx, prefetching pattern
-- [Supabase Auth for Next.js](https://supabase.com/docs/guides/auth/server-side/nextjs) -- Browser/server/proxy client setup, cookie handling
-- [Supabase AI Prompt: Next.js v16 Auth](https://supabase.com/docs/guides/getting-started/ai-prompts/nextjs-supabase-auth) -- Complete proxy.ts + server client code for Next.js 16
-- [Supabase getClaims() API Reference](https://supabase.com/docs/reference/javascript/auth-getclaims) -- Local JWT validation, faster than getUser()
-- [Supabase SSR Client Creation](https://supabase.com/docs/guides/auth/server-side/creating-a-client) -- Three client pattern
+- [tRPC v11 Data Transformers](https://trpc.io/docs/server/data-transformers) -- superjson configuration on both server AND link
+- [tRPC v10 to v11 Migration](https://trpc.io/docs/migrate-from-v10-to-v11) -- Package renames, API changes
+- [Supabase SSR Client Creation](https://supabase.com/docs/guides/auth/server-side/creating-a-client) -- Three client pattern, PUBLISHABLE_KEY naming
+- [Supabase Auth for Next.js](https://supabase.com/docs/guides/auth/server-side/nextjs) -- Browser/server/proxy client setup, getClaims recommendation
+- [Supabase getClaims() API Reference](https://supabase.com/docs/reference/javascript/auth-getclaims) -- Local JWT validation, JWKS caching, auto token refresh
+- [Supabase AI Prompt: Next.js Auth](https://supabase.com/docs/guides/getting-started/ai-prompts/nextjs-supabase-auth) -- Complete proxy + server client code
 - [shadcn/ui Next.js Installation](https://ui.shadcn.com/docs/installation/next) -- Init command, component adding
-- [shadcn/ui Tailwind v4 Guide](https://ui.shadcn.com/docs/tailwind-v4) -- @theme inline, OKLCH, tw-animate-css, forwardRef removal
+- [shadcn/ui Tailwind v4 Guide](https://ui.shadcn.com/docs/tailwind-v4) -- @theme inline, OKLCH, tw-animate-css, @custom-variant dark, forwardRef removal
 
 ### Secondary (MEDIUM confidence)
 - [tRPC v11 Next.js App Router 2026 Guide](https://dev.to/christadrian/mastering-trpc-with-react-server-components-the-definitive-2026-guide-1i2e) -- Community guide, confirmed patterns
-- [tRPC v11 Next.js App Router 2025 Guide](https://dev.to/matowang/trpc-11-setup-for-nextjs-app-router-2025-33fo) -- Setup reference
-- [Supabase getClaims vs getUser Discussion](https://github.com/supabase/supabase/issues/40985) -- Clarification on when to use each
+- [tRPC v11 transformer Discussion](https://github.com/trpc/trpc/discussions/5570) -- Confirmation that transformer moved to link config
 - [Auth0 Next.js 16 Auth Guide](https://auth0.com/blog/whats-new-nextjs-16/) -- CVE-2025-29927 analysis, auth in proxy risks
+- [Supabase getClaims vs getUser Discussion](https://github.com/supabase/supabase/issues/40985) -- Clarification on when to use each
 
 ### Tertiary (LOW confidence)
 - Color palette (organic theme): Based on design principles, not from a specific verified source. Adjust after seeing the result.
@@ -1011,7 +1025,7 @@ Things that could not be fully resolved:
 ## Metadata
 
 **Confidence breakdown:**
-- Standard stack: HIGH -- All versions verified against npm within 48 hours by prior research. Integration patterns confirmed by official docs.
+- Standard stack: HIGH -- All versions verified against npm and official docs. Integration patterns confirmed.
 - Architecture: HIGH -- File structure and setup patterns verified against tRPC v11 official docs and Supabase Next.js guide. Both show identical patterns.
 - Pitfalls: HIGH -- Verified via CVE-2025-29927, Next.js 16 upgrade guide, tRPC v11 migration guide. Well-documented breaking changes.
 - Database schema: HIGH -- Verified against Supabase RLS documentation. Schema from prior architecture research.
