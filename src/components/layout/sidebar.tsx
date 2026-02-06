@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, FileText, Clock, User, Shield } from 'lucide-react'
+import { Sparkles, FileText, Clock, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
+import { UserMenu } from './user-menu'
 
 const navItems = [
   {
@@ -23,11 +24,6 @@ const navItems = [
     href: '/history',
     icon: Clock,
   },
-  {
-    name: 'Profil',
-    href: '/profile',
-    icon: User,
-  },
 ]
 
 const adminItem = {
@@ -36,7 +32,14 @@ const adminItem = {
   icon: Shield,
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  user: {
+    email: string
+    displayName?: string | null
+  }
+}
+
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -89,8 +92,8 @@ export function Sidebar() {
         </Link>
       </nav>
 
-      <div className="p-4 text-xs text-muted-foreground">
-        <p>v0.1.0</p>
+      <div className="p-4">
+        <UserMenu user={user} />
       </div>
     </aside>
   )

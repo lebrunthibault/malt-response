@@ -1,15 +1,18 @@
 import { Sidebar } from '@/components/layout/sidebar'
+import { getUserData } from '@/lib/auth/get-user-data'
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const userData = await getUserData()
+
   return (
     <div className="flex h-screen">
       {/* Desktop sidebar - always visible on lg+ */}
       <div className="hidden lg:block">
-        <Sidebar />
+        <Sidebar user={userData} />
       </div>
 
       {/* Main content area */}

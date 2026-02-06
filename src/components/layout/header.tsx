@@ -11,9 +11,13 @@ import { Sidebar } from './sidebar'
 
 interface HeaderProps {
   title: string
+  user: {
+    email: string
+    displayName?: string | null
+  }
 }
 
-export function Header({ title }: HeaderProps) {
+export function Header({ title, user }: HeaderProps) {
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-background px-6 lg:hidden">
       <Sheet>
@@ -24,7 +28,7 @@ export function Header({ title }: HeaderProps) {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-60">
-          <Sidebar />
+          <Sidebar user={user} />
         </SheetContent>
       </Sheet>
 
