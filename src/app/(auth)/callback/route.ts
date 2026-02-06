@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
+  const redirect = searchParams.get('redirect')
 
   if (!code) {
     return NextResponse.redirect(new URL('/auth/error', request.url))
@@ -19,6 +20,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/error', request.url))
   }
 
-  // Successful authentication - redirect to app
-  return NextResponse.redirect(new URL('/generate', request.url))
+  // Validate redirect URL to prevent open redirect
+  let redirectPath = '/generate'
+  if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+    redirectPath = redirect
+  }
+
+  // Successful authentication - redirect to validated path
+  return NextResponse.redirect(new URL(redirectPath, request.url))
 }
