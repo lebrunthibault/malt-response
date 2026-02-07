@@ -37,6 +37,17 @@ export async function requestOtpAction(formData: FormData) {
 
   if (error) {
     console.error('OTP request error:', error)
+
+    if (error.code === 'over_email_send_rate_limit') {
+      const seconds = error.message.match(/after (\d+) seconds/)?.[1]
+      return {
+        success: false,
+        error: seconds
+          ? `Réessayez dans ${seconds} secondes`
+          : 'Trop de tentatives — réessayez dans quelques instants',
+      }
+    }
+
     return {
       success: false,
       error: 'Erreur lors de l\'envoi du code',
