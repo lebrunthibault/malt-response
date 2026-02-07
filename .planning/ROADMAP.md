@@ -53,7 +53,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — OTP login flow, user menu dropdown with logout, route protection with return URL, skeleton loading
+- [x] 02-01-PLAN.md — OTP login flow, user menu dropdown with logout, route protection with return URL, skeleton loading
 - [ ] 02-02-PLAN.md — Profile page with tRPC router and inline name editing
 
 ### Phase 3: Document Management
@@ -154,7 +154,7 @@ Note: Phases 5, 6, and 7 all depend on Phase 4 and could execute in parallel, bu
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-02-06 |
-| 2. Authentication | 0/2 | Not started | - |
+| 2. Authentication | 1/2 | In progress | - |
 | 3. Document Management | 0/2 | Not started | - |
 | 4. Generation Core | 0/2 | Not started | - |
 | 5. Rate Limiting & Notifications | 0/1 | Not started | - |

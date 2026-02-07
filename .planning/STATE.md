@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Generer en un clic une reponse de candidature Malt pertinente et personnalisee, alimentee par le contexte complet du candidat.
-**Current focus:** Phase 2 - Authentication
+**Current focus:** Phase 2 - Authentication (plan 02-02 next)
 
 ## Current Position
 
 Phase: 2 of 8 (Authentication)
-Plan: 1 of 2 in current phase
-Status: 02-01 checkpoint paused (Supabase email template needs OTP config)
-Last activity: 2026-02-06 -- Tasks 1-2 of 02-01 committed, checkpoint awaiting user verification
+Plan: 2 of 2 in current phase
+Status: 02-01 complete, 02-02 ready to execute
+Last activity: 2026-02-07 -- 02-01 checkpoint approved, SMTP Brevo configured, rate limit UX added
 
-Progress: [██░░░░░░░░] 20% (3/15 plans)
+Progress: [██░░░░░░░░] 27% (4/15 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 4m
-- Total execution time: 0.2 hours
+- Total plans completed: 4
+- Average duration: ~4m (automated plans)
+- Total execution time: ~0.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 12m | 4m |
+| 02-authentication | 1/2 | manual | - |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4m), 01-02 (3m), 01-03 (5m)
+- Last 5 plans: 01-01 (4m), 01-02 (3m), 01-03 (5m), 02-01 (manual)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -55,6 +56,10 @@ Recent decisions affecting current work:
 - [01-03]: Sidebar navigation over top nav (French labels scale better)
 - [01-03]: Route groups: (app) authenticated, (auth) public, (admin) admin
 - [01-03]: Root / redirects to /generate as primary action
+- [02-01]: Server Actions for auth (not tRPC) — cookie access needed
+- [02-01]: Profile removed from sidebar nav, only in user menu dropdown
+- [02-01]: getUserData helper for centralized auth+profile fetching
+- [02-01]: Rate limit error shows countdown seconds from Supabase error message
 
 ### Pending Todos
 
@@ -68,6 +73,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Phase 2, Plan 02-01 checkpoint (task 3/3) — awaiting Supabase email template config
-Resume file: .planning/phases/02-authentication/.continue-here.md
+Last session: 2026-02-07
+Stopped at: 02-01 approved, ready to execute 02-02 (Profile page with tRPC router)
+Resume file: none
